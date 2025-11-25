@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wordle Clone — Simple</title>
+  <style>
+    :root{
+      --bg:#121213;
+      --tile:#3a3a3c;
+      --text:#d7dadc;
+      --yellow:#b59f3b;
+      --green:#538d4e;
+      --gray:#818384;
+      --key:#818384;
+      --glass: rgba(255,255,255,0.03);
+      font-synthesis: none;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0;padding:24px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(180deg,#0f1720 0%, #0b1220 100%);
+      color:var(--text);
+      display:flex;flex-direction:column;align-items:center;
+    }
+    header{max-width:700px;width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    h1{margin:0;font-size:20px}
+    main{width:100%;max-width:700px}
+
+    /* board */
+    .board{
+      display:grid;grid-template-rows:repeat(6,64px);gap:8px;margin:14px 0 18px;
+    }
+    .row{display:grid;grid-template-columns:repeat(5,64px);gap:8px}
+    .tile{
+      background:var(--tile);width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:var(--text);text-transform:uppercase;border-radius:6px;user-select:none;transition:background .25s,transform .2s;}
+    .tile.filled{font-size:28px}
+    .tile.flip{transform:rotateX(90deg);}
+
+    /* keyboard */
+    .keyboard{display:flex;flex-direction:column;gap:8px;align-items:center}
+    .keys{display:flex;gap:8px}
+    .key{background:var(--glass);padding:12px 8px;border-radius:6px;min-width:34px;text-align:center;font-weight:700;cursor:pointer;user-select:none}
+    .key.wide{min-width:64px}
+    .key.gray{background:var(--key);color:#fff}
+    .key.yellow{background:var(--yellow);color:#111}
+    .key.green{background:var(--green);color:#fff}
+
+    /* small helpers */
+    .controls{display:flex;gap:8px}
+    button{background:#0b1220;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:8px 12px;border-radius:6px;cursor:pointer}
+    .msg{min-height:24px;margin-top:8px;color:#ffd;}
+    footer{margin-top:auto;color:rgba(255,255,255,0.45);font-size:13px}
+
+    /* responsive */
+    @media (max-width:480px){
+      .board{gap:6px}
+      .row{grid-template-columns:repeat(5,56px)}
+      .tile{width:56px;height:56px;font-size:24px}
+      .key{padding:10px 6px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Wordle Clone — Simple</h1>
+    <div class="controls">
+      <button id="newBtn">New Game</button>
+      <button id="helpBtn">How to</button>
+    </div>
+  </header>
+  <main>
+    <div id="board" class="board" aria-label="Word guesses"></div>
+
+    <div id="keyboard" class="keyboard" aria-hidden="false">
+      <div class="keys" id="row1"></div>
+      <div class="keys" id="row2"></div>
+      <div class="keys" id="row3"></div>
+    </div>
+
+    <div class="msg" id="message"></div>
+  </main>
+
+  <footer>Built for your website — copy the file into your site and open in a browser.</footer>
+
+  <script>
+    // --- Small word lists (replace with larger lists for production) ---
+    const SOLUTIONS = ["APPLE","GRACE","PLANT","CRANE","BRAVE","GHOST","SHINE","TRACE","PRIDE","THINK"];
+    const DICTIONARY = [...new Set([...SOLUTIONS,
+      "ABOUT","ABOVE","BREAD","BRICK","CRANE","CRAZY","CRISP","DANCE","EARTH","FAITH","FIRST","GREAT","HOUSE","INPUT","JELLY","KNIFE","LEMON","MONEY","NURSE","OCEAN","POWER","QUIET","RIVER","SMILE","TABLE","UNTIL","VIVID","WORLD","YEAST","ZEBRA"
+    ])];
+
+    // Game state
+    let solution = '';
+    let currentRow = 0;
+    let currentCol = 0;
+    const maxRows = 6, cols = 5;
+    const board = [];
+
+    const boardEl = document.getElementById('board');
+    const messageEl = document.getElementById('message');
+    const keyboardEl = document.getElementById('keyboard');
+
+    function createBoard(){
+      boardEl.innerHTML='';
+      board.length=0;
+      for(let r=0;r<maxRows;r++){
+        const row = document.createElement('div'); row.className='row';
+        const rowTiles = [];
+        for(let c=0;c<cols;c++){
+          const t = document.createElement('div'); t.className='tile'; t.dataset.r=r; t.dataset.c=c; t.setAttribute('aria-live','polite');
+          row.appendChild(t); rowTiles.push(t);
+        }
+        boardEl.appendChild(row); board.push(rowTiles);
+      }
+    }
+
+    function pickSolution(){
+      solution = SOLUTIONS[Math.floor(Math.random()*SOLUTIONS.length)];
+      console.log('solution=',solution);
+    }
+
+    function showMessage(msg,timeout=2000){
+      messageEl.textContent=msg;
+      if(timeout>0) setTimeout(()=>{ if(messageEl.textContent===msg) messageEl.textContent=''; },timeout);
+    }
+
+    // Keyboard
+    const KEY_ROWS = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+    function createKeyboard(){
+      document.getElementById('row1').innerHTML='';
+      document.getElementById('row2').innerHTML='';
+      document.getElementById('row3').innerHTML='';
+      KEY_ROWS.forEach((r,ri)=>{
+        const rowId = 'row'+(ri+1);
+        const rowEl = document.getElementById(rowId);
+        for(const ch of r){
+          const k = document.createElement('div'); k.className='key'; k.textContent=ch; k.dataset.letter=ch; k.addEventListener('click',()=>onKey(ch));
+          rowEl.appendChild(k);
+        }
+      });
+      const enter = document.createElement('div'); enter.className='key wide'; enter.textContent='Enter'; enter.addEventListener('click',()=>onKey('Enter'));
+      const back = document.createElement('div'); back.className='key wide'; back.textContent='Back'; back.addEventListener('click',()=>onKey('Back'));
+      document.getElementById('row3').insertBefore(enter,document.getElementById('row3').firstChild);
+      document.getElementById('row3').appendChild(back);
+    }
+
+    // Input handling
+    function onKey(key){
+      if(key==='Back') return deleteLetter();
+      if(key==='Enter') return submit();
+      if(/^[A-Z]$/.test(key)) return addLetter(key);
+    }
+
+    function addLetter(letter){
+      if(currentCol>=cols) return;
+      board[currentRow][currentCol].textContent=letter; board[currentRow][currentCol].classList.add('filled');
+      currentCol++;
+    }
+    function deleteLetter(){
+      if(currentCol<=0) return;
+      currentCol--; board[currentRow][currentCol].textContent=''; board[currentRow][currentCol].classList.remove('filled');
+    }
+
+    function submit(){
+      if(currentCol!==cols){ showMessage('Not enough letters'); return; }
+      const guess = board[currentRow].map(t=>t.textContent).join('');
+      // Dictionary check disabled so any 5‑letter guess works
+      // if(!DICTIONARY.includes(guess)) { showMessage('Not in word list'); shakeRow(currentRow); return; } shakeRow(currentRow); return; }
+      revealGuess(guess);
+    }
+
+    function shakeRow(r){
+      board[r].forEach((t,i)=>{
+        t.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}],{duration:360,iterations:1});
+      });
+    }
+
+    function revealGuess(guess){
+      // Build arrays to mark greens and yellows
+      const solArr = solution.split('');
+      const guessArr = guess.split('');
+      const status = Array(cols).fill('absent');
+      // First pass for greens
+      for(let i=0;i<cols;i++){
+        if(guessArr[i]===solArr[i]){ status[i]='correct'; solArr[i]=null; }
+      }
+      // Second pass for yellows
+      for(let i=0;i<cols;i++){
+        if(status[i]==='correct') continue;
+        const idx = solArr.indexOf(guessArr[i]);
+        if(idx!==-1){ status[i]='present'; solArr[idx]=null; }
+      }
+
+      // Animate reveal
+      for(let i=0;i<cols;i++){
+        const tile = board[currentRow][i];
+        setTimeout(((t,s,i)=>()=>{
+          t.classList.add('flip');
+          // after small timeout, set color
+          setTimeout(()=>{
+            t.classList.remove('flip');
+            if(s==='correct'){ t.style.background=getComputedStyle(document.documentElement).getPropertyValue('--green')||'#538d4e'; t.style.color='#fff'; setKeyState(t.textContent,'green'); }
+            else if(s==='present'){ t.style.background=getComputedStyle(document.documentElement).getPropertyValue('--yellow')||'#b59f3b'; t.style.color='#111'; setKeyState(t.textContent,'yellow'); }
+            else { t.style.background=getComputedStyle(document.documentElement).getPropertyValue('--gray')||'#3a3a3c'; t.style.color='#fff'; setKeyState(t.textContent,'gray'); }
+          },120);
+        })(tile,status[i],i), i*300);
+      }
+
+      // After reveal finishes
+      setTimeout(()=>{
+        if(status.every(s=>s==='correct')){
+          showMessage('You Win! Solution: '+solution,0);
+        } else {
+          currentRow++; currentCol=0;
+          if(currentRow>=maxRows){ showMessage('Game Over — the word was '+solution,0); revealSolution(); }
+        }
+      }, cols*300 + 200);
+    }
+
+    function setKeyState(letter,state){
+      const keys = document.querySelectorAll('.key');
+      keys.forEach(k=>{
+        if(k.dataset.letter===letter){
+          if(state==='green'){ k.classList.remove('yellow','gray'); k.classList.add('green'); }
+          else if(state==='yellow'){ if(!k.classList.contains('green')){ k.classList.remove('gray'); k.classList.add('yellow'); } }
+          else{ if(!k.classList.contains('green') && !k.classList.contains('yellow')) k.classList.add('gray'); }
+        }
+      });
+    }
+
+    function revealSolution(){
+      // reveal remaining rows quickly
+      for(let r=currentRow;r<maxRows;r++){
+        for(let c=0;c<cols;c++){
+          const tile = board[r][c];
+          tile.style.opacity=0.4;
+        }
+      }
+    }
+
+    // Keyboard events
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Backspace') return onKey('Back');
+      if(e.key==='Enter') return onKey('Enter');
+      const k = e.key.toUpperCase();
+      if(k.length===1 && k>='A' && k<='Z') onKey(k);
+    });
+
+    // Init
+    function start(){
+      createBoard(); createKeyboard(); pickSolution(); currentRow=0; currentCol=0; messageEl.textContent='';
+      // reset tile styles
+      document.querySelectorAll('.tile').forEach(t=>{ t.textContent=''; t.style.background='var(--tile)'; t.style.color='var(--text)'; t.classList.remove('filled'); });
+      document.querySelectorAll('.key').forEach(k=>{ k.classList.remove('green','yellow','gray'); });
+    }
+
+    document.getElementById('newBtn').addEventListener('click',()=>{ pickSolution(); start(); });
+    document.getElementById('helpBtn').addEventListener('click',()=>{
+      alert('Guess the 5-letter word in 6 tries. Green = correct spot. Yellow = in word but different spot. Gray = not in word. Use on-screen keyboard or your keyboard.');
+    });
+
+    // small accessibility: focus first tile
+    boardEl.addEventListener('click',()=>{ document.activeElement.blur(); });
+
+    // prepare and start
+    start();
+  </script>
+</body>
+</html>
