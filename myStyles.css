@@ -1,0 +1,67 @@
+body {
+    background-color: lightgray;
+}
+h1{
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: white;
+}
+img {
+    border: 5px solid black;
+}
+a, a:visited {
+    text-decoration: none;
+     font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    color: black;
+}
+.header {
+    font-size: 22px;
+    float: right;
+}
+.leftBar {
+    width: 150px;
+    height: 150vh;
+    padding: 20px;
+    float: left; /* pushes it to the left */
+    border-right: 2px solid darkgray;
+}
+.main {
+    margin-left: 170px; /* space for sidebar */
+    padding: 20px;
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+.rightBar {
+    width: 300px;
+    height: 150vh; /* full height */
+    padding: 20px;
+    float: right; /* pushes it to the right */
+    border-left: 2px solid darkgray;
+}
+p {
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+h3 {
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 ratio */
+    height: 0;
+    overflow: hidden;
+    max-width: 800px;
+    margin: 0 auto; /* centers the container */
+}
+iframe {
+    display: block;
+    margin: 0 auto;
+}
+.footer {
+  background-color: #f2f2f2; /* light gray */
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+  position: relative; /* default */
+}
+
+
+
